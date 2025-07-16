@@ -304,6 +304,11 @@
         <div v-if="aiAnalyzing" class="ai-loading">
           <el-icon class="is-loading"><Loading /></el-icon>
           <span>AI正在分析中，请稍候...</span>
+          <div class="countdown-display">
+            <span class="countdown-text">预计还需等待：</span>
+            <span class="countdown-number">{{ countdown }}</span>
+            <span class="countdown-unit">秒</span>
+          </div>
         </div>
         <div class="ai-result">
           <div class="ai-result-content">
@@ -421,6 +426,8 @@ const aiDialogVisible = ref(false)
 const aiAnalyzing = ref(false)
 const aiAnalysisResult = ref('')
 const currentAnalyzingRecord = ref<any>(null)
+const countdown = ref(60)
+const countdownTimer = ref<number | null>(null)
 
 // 知识点计算属性
 const knowledgePoints = computed(() => {
@@ -653,6 +660,26 @@ const getStatusText = (resultType: number) => {
   }
 }
 
+// 启动倒计时
+const startCountdown = () => {
+  countdown.value = 60
+  countdownTimer.value = setInterval(() => {
+    countdown.value--
+    if (countdown.value <= 0) {
+      clearInterval(countdownTimer.value!)
+      countdownTimer.value = null
+    }
+  }, 1000)
+}
+
+// 停止倒计时
+const stopCountdown = () => {
+  if (countdownTimer.value) {
+    clearInterval(countdownTimer.value)
+    countdownTimer.value = null
+  }
+}
+
 // AI分析功能（流式输出）
 const analyzeWithAI = async (record: any) => {
   if (!selectedProblem.value) {
@@ -665,6 +692,9 @@ const analyzeWithAI = async (record: any) => {
   aiDialogVisible.value = true
   aiAnalyzing.value = true
   aiAnalysisResult.value = '正在连接AI服务，请稍候...'
+  
+  // 启动倒计时
+  startCountdown()
 
   try {
     // 获取token
@@ -718,10 +748,13 @@ const analyzeWithAI = async (record: any) => {
               } else if (data.type === 'error') {
                 // 错误处理
                 aiAnalysisResult.value = data.message || 'AI分析失败'
+                aiAnalyzing.value = false
+                stopCountdown()
                 ElMessage.error('AI分析失败')
               } else if (data.type === 'done') {
                 // 分析完成
                 aiAnalyzing.value = false
+                stopCountdown()
                 // 将结果保存到记录中
                 record.aiAnalysis = aiAnalysisResult.value
                 ElMessage.success('AI分析完成')
@@ -738,6 +771,7 @@ const analyzeWithAI = async (record: any) => {
     console.error('AI分析失败:', error)
     aiAnalysisResult.value = 'AI分析失败，请稍后重试'
     aiAnalyzing.value = false
+    stopCountdown()
     ElMessage.error('AI分析失败，请稍后重试')
   }
 }
@@ -754,6 +788,7 @@ const saveAiAnalysis = () => {
 const closeAiDialog = () => {
   aiDialogVisible.value = false
   currentAnalyzingRecord.value = null
+  stopCountdown()
 }
 
 // 导航方法
@@ -878,6 +913,7 @@ const resetPasswordForm = () => {
 
 .ai-loading {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 40px 20px;
@@ -888,6 +924,31 @@ const resetPasswordForm = () => {
 .ai-loading .el-icon {
   margin-right: 8px;
   font-size: 20px;
+}
+
+.countdown-display {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  color: #666;
+}
+
+.countdown-text {
+  color: #666;
+}
+
+.countdown-number {
+  font-weight: 600;
+  color: #409eff;
+  font-size: 16px;
+  min-width: 24px;
+  text-align: center;
+}
+
+.countdown-unit {
+  color: #666;
 }
 
 .ai-result {

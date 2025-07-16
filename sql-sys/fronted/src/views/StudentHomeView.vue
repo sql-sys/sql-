@@ -48,6 +48,7 @@
                   </div>
                   <div class="student-info">
                     <div class="student-name">{{ item.姓名 }}</div>
+                    <div class="student-class">{{ item.班级 }}</div>
                     <div class="student-stats">
                       <span class="stat-item">题目数: {{ item.题目数 }}</span>
                       <span class="stat-item">方法数: {{ item.方法数 }}</span>
@@ -97,7 +98,30 @@
               <div class="current-rank">
                 <div class="rank-display">
                   <span class="rank-text">当前排名</span>
-                  <span class="rank-value">无</span>
+                  <span class="rank-value" :class="{
+                    'rank-top-three': currentStudentRank && currentStudentRank.名次 <= 3,
+                    'rank-gold': currentStudentRank && currentStudentRank.名次 === 1,
+                    'rank-silver': currentStudentRank && currentStudentRank.名次 === 2,
+                    'rank-bronze': currentStudentRank && currentStudentRank.名次 === 3
+                  }">
+                    <span v-if="currentStudentRank">
+                      <span v-if="currentStudentRank.名次 === 1">🥇 第{{ currentStudentRank.名次 }}名</span>
+                      <span v-else-if="currentStudentRank.名次 === 2">🥈 第{{ currentStudentRank.名次 }}名</span>
+                      <span v-else-if="currentStudentRank.名次 === 3">🥉 第{{ currentStudentRank.名次 }}名</span>
+                      <span v-else>第{{ currentStudentRank.名次 }}名</span>
+                    </span>
+                    <span v-else>暂无排名</span>
+                  </span>
+                </div>
+                <div v-if="currentStudentRank" class="rank-stats">
+                  <div class="stat-item">
+                    <span class="stat-label">题目数:</span>
+                    <span class="stat-value">{{ currentStudentRank.题目数 }}</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-label">方法数:</span>
+                    <span class="stat-value">{{ currentStudentRank.方法数 }}</span>
+                  </div>
                 </div>
                 <div class="timestamp">
                   <span class="time-label">更新时间:</span>
@@ -161,7 +185,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from '@/utils/axios'
 import { 
@@ -184,7 +208,9 @@ import { ArrowDown } from '@element-plus/icons-vue'
 // 类型定义
 interface RankingItem {
   名次: number
+  学生号: number
   姓名: string
+  班级: string
   题目数: number
   方法数: number
 }
@@ -216,6 +242,19 @@ const passwordForm = ref({
   confirm_password: ''
 })
 const passwordLoading = ref(false)
+
+// 计算当前学生的排名
+const currentStudentRank = computed(() => {
+  if (!studentInfo.value.姓名 || !studentInfo.value.班级 || !rankingData.value.length) {
+    return null
+  }
+  
+  // 使用姓名和班级匹配排名
+  const studentRank = rankingData.value.find(item => 
+    item.姓名 === studentInfo.value.姓名 && item.班级 === studentInfo.value.班级
+  )
+  return studentRank || null
+})
 
 // 生成当前时间戳
 const generateTimestamp = () => {
@@ -539,19 +578,22 @@ onMounted(() => {
 .current-rank-card {
   background: white;
   border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s, box-shadow 0.3s;
+  padding: 24px;
+  transition: transform 0.3s;
 }
 
 .ranking-card {
   height: 100%;
   display: flex;
   flex-direction: column;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
 }
 
 .student-card {
-  flex: 1;
+  flex: 0 0 auto;
+  max-height: 288px;
+  overflow-y: auto;
 }
 
 .current-rank-card {
@@ -562,7 +604,6 @@ onMounted(() => {
 .student-card:hover,
 .current-rank-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
 .ranking-card h3,
@@ -585,20 +626,26 @@ onMounted(() => {
 .ranking-item {
   display: flex;
   align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid #f5f5f5;
-  transition: background-color 0.3s;
+  padding: 16px;
+  margin-bottom: 8px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  transition: all 0.3s ease;
 }
 
 .ranking-item:hover {
-  background-color: #f8f9fa;
+  background: rgba(255, 255, 255, 0.95);
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
 }
 
 .ranking-item.top-three {
-  background: linear-gradient(135deg, #fff8e1 0%, #fff3c4 100%);
-  border-radius: 8px;
-  margin-bottom: 8px;
-  padding: 12px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #f59e0b;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+  margin-bottom: 12px;
+  padding: 16px;
 }
 
 .rank-number {
@@ -634,17 +681,39 @@ onMounted(() => {
   margin-bottom: 4px;
 }
 
+.student-details {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.student-id,
+.student-class {
+  font-size: 11px;
+  color: #475569;
+  background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%);
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-weight: 600;
+  border: 1px solid #a78bfa;
+  display: inline;
+  white-space: nowrap;
+}
+
 .student-stats {
   display: flex;
   gap: 15px;
 }
 
 .stat-item {
-  font-size: 12px;
-  color: #666;
-  background: #f0f0f0;
-  padding: 2px 8px;
-  border-radius: 12px;
+  font-size: 11px;
+  color: #475569;
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-weight: 600;
+  border: 1px solid #94a3b8;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* 学生信息样式 */
@@ -694,6 +763,69 @@ onMounted(() => {
 .rank-value {
   display: block;
   font-size: 36px;
+  font-weight: bold;
+  color: #667eea;
+}
+
+/* 排名特殊样式 */
+.rank-value.rank-gold {
+  color: #ffd700;
+  text-shadow: 0 2px 4px rgba(255, 215, 0, 0.3);
+}
+
+.rank-value.rank-silver {
+  color: #c0c0c0;
+  text-shadow: 0 2px 4px rgba(192, 192, 192, 0.3);
+}
+
+.rank-value.rank-bronze {
+  color: #cd7f32;
+  text-shadow: 0 2px 4px rgba(205, 127, 50, 0.3);
+}
+
+.rank-value.rank-top-three {
+  font-size: 32px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* 我的排名统计信息样式 */
+.rank-stats {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 15px;
+  padding: 15px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.rank-stats .stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: white;
+  padding: 10px 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-width: 80px;
+}
+
+.rank-stats .stat-label {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.rank-stats .stat-value {
+  font-size: 18px;
   font-weight: bold;
   color: #667eea;
 }

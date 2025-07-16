@@ -50,6 +50,7 @@
                   </div>
                   <div class="student-info">
                     <div class="student-name">{{ item.姓名 }}</div>
+                    <div class="student-class">{{ item.班级 }}</div>
                     <div class="student-stats">
                       <span class="stat-item">题目数: {{ item.题目数 }}</span>
                       <span class="stat-item">方法数: {{ item.方法数 }}</span>
@@ -186,7 +187,9 @@ import { ArrowDown, DataAnalysis, Document, User, Grid } from '@element-plus/ico
 // 类型定义
 interface RankingItem {
   名次: number
+  学生号: number
   姓名: string
+  班级: string
   题目数: number
   方法数: number
 }
@@ -549,18 +552,21 @@ onMounted(() => {
   background: white;
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s, box-shadow 0.3s;
+  transition: transform 0.3s;
 }
 
 .ranking-card {
   height: 100%;
   display: flex;
   flex-direction: column;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
 }
 
 .teacher-card {
-  flex: 1;
+  flex: 0 0 auto;
+  max-height: 216px;
+  overflow-y: auto;
 }
 
 .quick-actions-card {
@@ -571,7 +577,6 @@ onMounted(() => {
 .teacher-card:hover,
 .quick-actions-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
 .ranking-card h3,
@@ -594,20 +599,26 @@ onMounted(() => {
 .ranking-item {
   display: flex;
   align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid #f5f5f5;
-  transition: background-color 0.3s;
+  padding: 16px;
+  margin-bottom: 8px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  transition: all 0.3s ease;
 }
 
 .ranking-item:hover {
-  background-color: #f8f9fa;
+  background: rgba(255, 255, 255, 0.95);
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
 }
 
 .ranking-item.top-three {
-  background: linear-gradient(135deg, #fff8e1 0%, #fff3c4 100%);
-  border-radius: 8px;
-  margin-bottom: 8px;
-  padding: 12px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #f59e0b;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+  margin-bottom: 12px;
+  padding: 16px;
 }
 
 .rank-number {
@@ -643,17 +654,33 @@ onMounted(() => {
   margin-bottom: 4px;
 }
 
+.student-class {
+  font-size: 11px;
+  color: #475569;
+  margin-bottom: 4px;
+  font-weight: 600;
+  display: inline;
+  background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%);
+  padding: 2px 6px;
+  border-radius: 12px;
+  border: 1px solid #a78bfa;
+  white-space: nowrap;
+}
+
 .student-stats {
   display: flex;
   gap: 15px;
 }
 
 .stat-item {
-  font-size: 12px;
-  color: #666;
-  background: #f0f0f0;
-  padding: 2px 8px;
-  border-radius: 12px;
+  font-size: 11px;
+  color: #475569;
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-weight: 600;
+  border: 1px solid #94a3b8;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* 教师信息样式 */

@@ -277,13 +277,13 @@
                   <div class="status-setting-content">
                     <div class="status-options">
                       <el-radio-group v-model="editForm.schema_status" class="status-radio-group">
-                        <el-radio :label="SCHEMA_STATUS.VISIBLE" class="status-radio">
+                        <el-radio :label="1" class="status-radio">
                           <div class="radio-content">
                             <el-tag type="success" size="small">可见</el-tag>
                             <span class="radio-desc">学生可以使用数据库模式的题目和查询功能</span>
                           </div>
                         </el-radio>
-                        <el-radio :label="SCHEMA_STATUS.INVISIBLE" class="status-radio">
+                        <el-radio :label="0" class="status-radio">
                           <div class="radio-content">
                             <el-tag type="danger" size="small">不可见</el-tag>
                             <span class="radio-desc">数据库模式对学生透明，学生无法访问</span>
@@ -627,50 +627,26 @@ const router = useRouter()
 
 // 响应式数据
 const teacherInfo = ref<any>({})
-// 类型定义
-interface SchemaInfo {
-  schema_id: number
-  schema_name: string
-  schema_description: string
-  schema_status: 0 | 1  // 0: 不可见, 1: 可见
-  schema_author: string
-}
-
-interface EditForm {
-  schema_id: number
-  html_content: string
-  schema_name: string
-  schema_status: 0 | 1  // 0: 不可见, 1: 可见
-}
-
-// 常量定义
-const SCHEMA_STATUS = {
-  INVISIBLE: 0 as const,  // 不可见
-  VISIBLE: 1 as const     // 可见
-} as const
-
-type SchemaStatus = typeof SCHEMA_STATUS[keyof typeof SCHEMA_STATUS]
-
-const schemaList = ref<SchemaInfo[]>([])
+const schemaList = ref<any[]>([])
 const selectedSchema = ref<string>('')
-const selectedSchemaInfo = ref<SchemaInfo | null>(null)
+const selectedSchemaInfo = ref<any>(null)
 const activeTab = ref('basic')
 const sqlQuery = ref('SELECT * FROM EMPLOYEES')
 const queryResults = ref<any[]>([])
 const queryColumns = ref<string[]>([])
 const queryHistory = ref<any[]>([])
 
-const schemaStatus = ref<SchemaStatus>(SCHEMA_STATUS.VISIBLE) // 默认可见
+const schemaStatus = ref<number>(1) // 1: 完全可见, 0: 不可见
 const statusLoading = ref(false)
 
 // 编辑模式相关
 const isEditMode = ref(false)
 const editHtmlViewMode = ref('edit') // 'edit', 'preview', 'split'
-const editForm = ref<EditForm>({
+const editForm = ref({
   schema_id: 0,
   html_content: '',
   schema_name: '',
-  schema_status: SCHEMA_STATUS.VISIBLE, // 默认为可见
+  schema_status: 1, // 默认为可见
 })
 const editFormRef = ref()
 const editLoading = ref(false)
@@ -765,12 +741,9 @@ const fetchSchemaList = async () => {
   try {
     const response = await axios.get('/public/schema/list')
     if (response.data && Array.isArray(response.data)) {
-      schemaList.value = response.data.map((schema: any): SchemaInfo => ({
+      schemaList.value = response.data.map((schema) => ({
+        ...schema,
         schema_id: schema.schema_id || 1, // 确保有schema_id
-        schema_name: schema.schema_name || '',
-        schema_description: schema.schema_description || '',
-        schema_status: (schema.schema_status === SCHEMA_STATUS.INVISIBLE || schema.schema_status === SCHEMA_STATUS.VISIBLE) ? schema.schema_status : SCHEMA_STATUS.VISIBLE, // 确保类型正确
-        schema_author: schema.schema_author || '未知',
       }))
     }
   } catch (error) {
@@ -780,7 +753,7 @@ const fetchSchemaList = async () => {
 }
 
 // 选择数据库模式
-const selectSchema = (schema: SchemaInfo) => {
+const selectSchema = (schema: any) => {
   selectedSchema.value = schema.schema_name
   selectedSchemaInfo.value = schema
   activeTab.value = 'basic' // 默认选择基本信息
@@ -789,7 +762,7 @@ const selectSchema = (schema: SchemaInfo) => {
   queryColumns.value = []
   // 根据当前模式的状态初始化schemaStatus
   // 使用后端返回的schema_status字段（0为不可见，1为可见）
-  schemaStatus.value = schema.schema_status || SCHEMA_STATUS.INVISIBLE
+  schemaStatus.value = schema.schema_status || 0
 }
 
 // 获取选中模式的schema_id
@@ -1122,13 +1095,13 @@ const createSchema = async () => {
 }
 
 // 获取可见性标签类型
-const getVisibilityTagType = (status: SchemaStatus) => {
-  return status === SCHEMA_STATUS.VISIBLE ? 'success' : 'danger'
+const getVisibilityTagType = (status: number) => {
+  return status === 1 ? 'success' : 'danger'
 }
 
 // 获取可见性文本
-const getVisibilityText = (status: SchemaStatus) => {
-  return status === SCHEMA_STATUS.VISIBLE ? '完全可见' : '不可见'
+const getVisibilityText = (status: number) => {
+  return status === 1 ? '完全可见' : '不可见'
 }
 
 // 获取数据库类型标签颜色
@@ -1142,9 +1115,7 @@ const enterEditMode = () => {
     schema_id: selectedSchemaInfo.value.schema_id,
     html_content: selectedSchemaInfo.value.schema_description || '', // 加载完整的HTML内容，不去除任何标签
     schema_name: selectedSchemaInfo.value.schema_name,
-    schema_status: (selectedSchemaInfo.value.schema_status === SCHEMA_STATUS.INVISIBLE || selectedSchemaInfo.value.schema_status === SCHEMA_STATUS.VISIBLE) 
-      ? selectedSchemaInfo.value.schema_status 
-      : SCHEMA_STATUS.VISIBLE, // 确保类型安全，加载当前状态
+    schema_status: selectedSchemaInfo.value.schema_status || 1, // 加载当前状态
   }
 }
 
@@ -1155,7 +1126,7 @@ const cancelEdit = () => {
     schema_id: 0,
     html_content: '',
     schema_name: '',
-    schema_status: SCHEMA_STATUS.VISIBLE,
+    schema_status: 1,
   }
 }
 
@@ -1167,13 +1138,7 @@ const saveChanges = async () => {
     editLoading.value = true
 
     // 调用新的编辑数据库模式接口
-    const updateData: {
-      schema_id: number
-      schema_description: string
-      schema_name: string
-      schema_status: 0 | 1  // 确保类型为整数 0 或 1
-    } = {
-      schema_id: selectedSchemaInfo.value.schema_id,
+    const updateData = {
       schema_description: editForm.value.html_content,
       schema_name: editForm.value.schema_name,
       schema_status: editForm.value.schema_status, // 使用编辑表单中的状态值
@@ -1209,7 +1174,7 @@ const saveChanges = async () => {
 }
 
 // 删除数据库模式
-const deleteSchema = async (schema: SchemaInfo) => {
+const deleteSchema = async (schema: any) => {
   try {
     await ElMessageBox.confirm(
       `确定要删除数据库模式 "${schema.schema_name}" 吗？\n\n注意：如果该模式下存在题目，需要先删除所有相关题目。`,

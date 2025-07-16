@@ -50,6 +50,10 @@
                   </div>
                   <div class="student-info">
                     <div class="student-name">{{ item.姓名 }}</div>
+                    <div class="student-details">
+                      <span class="student-id">学号: {{ item.学生号 }}</span>
+                      <span class="student-class">班级: {{ item.班级 }}</span>
+                    </div>
                     <div class="student-stats">
                       <span class="stat-item">题目数: {{ item.题目数 }}</span>
                       <span class="stat-item">方法数: {{ item.方法数 }}</span>
@@ -270,7 +274,9 @@ import * as XLSX from 'xlsx'
 // 类型定义
 interface RankingItem {
   名次: number
+  学生号: number
   姓名: string
+  班级: string
   题目数: number
   方法数: number
 }
@@ -1063,6 +1069,21 @@ onMounted(async () => {
   font-weight: 500;
   color: #1f2937;
   margin-bottom: 4px;
+}
+
+.student-details {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.student-id,
+.student-class {
+  font-size: 11px;
+  color: #666;
+  background: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 3px;
 }
 
 .student-stats {
